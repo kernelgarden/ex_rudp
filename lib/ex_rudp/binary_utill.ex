@@ -17,11 +17,15 @@ defmodule ExRudp.BinaryUtil do
     <<bin::binary, additional_bin::binary>>
   end
 
+  @spec bin_and(integer(), integer()) :: integer()
   def bin_and(left, right), do: left &&& right
 
+  @spec bin_or(integer(), integer()) :: integer()
   def bin_or(left, right), do: bor(left, right)
 
+  @spec bin_sl(integer(), integer()) :: integer()
   def bin_sl(left, right), do: left <<< right
 
+  @spec bin_sr(integer(), integer()) :: integer()
   def bin_sr(left, right), do: left >>> right
 end
