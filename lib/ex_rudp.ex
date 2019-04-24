@@ -1,18 +1,32 @@
 defmodule ExRudp do
-  @moduledoc """
-  Documentation for ExRudp.
-  """
+  @type state ::
+          type_ping()
+          | type_eof()
+          | type_corrupt()
+          | type_request()
+          | type_missing()
+          | type_normal()
 
-  @doc """
-  Hello world.
+  @type type_ping :: 0
+  @type type_eof :: 1
+  @type type_corrupt :: 2
+  @type type_request :: 3
+  @type type_missing :: 4
+  @type type_normal :: 5
 
-  ## Examples
+  def type_normal, do: 5
 
-      iex> ExRudp.hello()
-      :world
+  @type error :: {:error, error_detail()}
 
-  """
-  def hello do
-    :world
-  end
+  @type error_detail :: nil | :remote_eof | :corrupt | :msg_size
+
+  @max_msg_head 4
+  @general_package 576 - 60 - 8
+  @max_package 0x7FFF - 5
+
+  def max_msg_head, do: @max_msg_head
+
+  def general_package, do: @general_package
+
+  def max_package, do: @max_package
 end
