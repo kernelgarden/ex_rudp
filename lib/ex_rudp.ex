@@ -14,6 +14,16 @@ defmodule ExRudp do
   @type type_missing :: 4
   @type type_normal :: 5
 
+  def type_ping, do: 0
+
+  def type_eof, do: 1
+
+  def type_corrupt, do: 2
+
+  def type_request, do: 3
+
+  def type_missing, do: 4
+
   def type_normal, do: 5
 
   @type error :: {:error, error_detail()}
