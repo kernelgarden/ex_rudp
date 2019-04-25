@@ -135,7 +135,10 @@ defmodule ExRudp.Layer do
   end
 
   defp clear_send_expiration(layer) do
-    # todo
-    layer
+    new_send_history =
+      layer.send_history
+      |> Enum.drop_while(fn message -> message.tick < layer.last_expred_tick end)
+
+    put_in(layer.send_history, new_send_history)
   end
 end
