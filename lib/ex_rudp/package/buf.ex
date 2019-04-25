@@ -6,6 +6,11 @@ defmodule ExRudp.Package.Buf do
 
   defstruct tmp: <<>>, seq: 0, list: []
 
+  @spec new() :: ExRudp.Package.Buf.t()
+  def new() do
+    %__MODULE__{}
+  end
+
   @spec generate_new_package(__MODULE__.t()) :: __MODULE__.t()
   def generate_new_package(package_buf) do
     do_generate_new_package(package_buf, length(package_buf.list))
