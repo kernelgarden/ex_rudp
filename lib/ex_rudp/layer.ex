@@ -239,8 +239,8 @@ defmodule ExRudp.Layer do
     id = BinaryUtil.bin_or(id, filter)
 
     cond do
-      id < max - 0x8000 -> id + 0x10000
-      id > max + 0x8000 -> id - 0x10000
+      id < (max - 0x8000) -> id + 0x10000
+      id > (max + 0x8000) -> id - 0x10000
       true -> id
     end
   end
@@ -277,7 +277,7 @@ defmodule ExRudp.Layer do
           {:stop, layer, remain} ->
             {layer, remain}
 
-          {:cond, layer, remain} ->
+          {:cont, layer, remain} ->
             do_input(remain, layer)
         end
 
