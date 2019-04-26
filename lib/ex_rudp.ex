@@ -65,10 +65,13 @@ defmodule ExRudp do
   # 5 min * tick per sec
   @expired_tick 100 * 60 * 5
   @send_delay_tick 1
+  @missing_time 10_000_000
 
   def corrupt_tick, do: @corrupt_tick
 
   def expired_tick, do: @expired_tick
 
   def send_delay_tick, do: @send_delay_tick
+
+  def missing_time, do: @missing_time
 end

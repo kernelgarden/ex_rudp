@@ -23,6 +23,9 @@ defmodule ExRudp.BinaryUtil do
   @spec bin_or(integer(), integer()) :: integer()
   def bin_or(left, right), do: bor(left, right)
 
+  @spec bin_not(integer()) :: integer()
+  def bin_not(value), do: bnot(value)
+
   @spec bin_sl(integer(), integer()) :: integer()
   def bin_sl(left, right), do: left <<< right
 

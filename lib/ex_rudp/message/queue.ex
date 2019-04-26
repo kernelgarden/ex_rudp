@@ -3,6 +3,18 @@ defmodule ExRudp.Message.Queue do
 
   defstruct internal_queue: [], num: 0
 
+  @spec new() :: ExRudp.Message.Queue.t()
+  def new() do
+    %__MODULE__{}
+  end
+
+  @spec reset(__MODULE__.t()) :: ExRudp.Message.Queue.t()
+  def reset(queue) do
+    queue = put_in(queue.internal_queue, [])
+    queue = put_in(queue.num, 0)
+    queue
+  end
+
   @spec pop(__MODULE__.t(), integer()) ::
           {:ok, {__MODULE__.t(), Message.t()}}
           | {:error, :empty}
@@ -37,6 +49,18 @@ defmodule ExRudp.Message.Queue do
 
         {:ok, {queue, message}}
     end
+  end
+
+  @spec push_list(__MODULE__.t(), [Message.t()]) :: __MODULE__.t()
+  def push_list(queue, []) do
+    queue
+  end
+
+  def push_list(queue, messages) when is_list(messages) do
+    messages
+    |> Enum.reduce(queue, fn message, acc_queue ->
+      push(acc_queue, message)
+    end)
   end
 
   @spec push(__MODULE__.t(), Message.t()) :: __MODULE__.t()
