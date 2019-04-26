@@ -109,11 +109,6 @@ defmodule ExRudp.Layer do
       {:error, layer} ->
         {:error, layer}
     end
-
-    # todo: add make output package
-    output(layer)
-
-    {:ok, layer, nil}
   end
 
   defp check_expiration(layer) do
