@@ -179,29 +179,36 @@ defmodule ExRudp.Layer do
     {layer, package_buf}
   end
 
-  defp do_reply_request([head | _tail] = send_history, package_buf, min, max) do
+  defp do_reply_request(send_history, package_buf, min, max) do
+    head = Enum.at(send_history, 0)
     if max < head.id do
       PB.pack_request(package_buf, min, max, ExRudp.type_missing())
     else
-      process_send_history(package_buf, send_history, min, max, 0)
+      case MQ.is_empty?(send_history) do
+        true -> process_empty_send_history(package_buf, min, max, 0)
+        false -> process_send_history(package_buf, send_history, min, max, 0)
+      end
     end
   end
 
-  defp process_send_history(package_buf, [], min, _max, start) do
+  defp process_empty_send_history(package_buf, min, _max, start) do
     case min < start do
       true -> handle_missing(package_buf, min, start - 1)
       false -> package_buf
     end
   end
 
-  defp process_send_history(package_buf, [head | tail] = _send_history, min, max, start) do
-    if min <= head.id do
+  defp process_send_history(package_buf, send_history, min, max, start) do
+    head = Enum.at(send_history, 0)
+
+    if head != nil and min <= head.id do
       package_buf = PB.pack_message(package_buf, head)
       start = if start == 0, do: head.id, else: start
+      {:ok, {tail, _}} = MQ.pop(send_history, head.id)
       process_send_history(package_buf, tail, min, max, start)
     else
       # jump direct
-      process_send_history(package_buf, [], min, max, start)
+      process_empty_send_history(package_buf, min, max, start)
     end
   end
 
@@ -214,7 +221,6 @@ defmodule ExRudp.Layer do
       layer.send_queue
       |> Enum.reduce(package_buf, fn message, acc_package_buf ->
         message
-        |> IO.inspect(label: "Fuck => ")
         PB.pack_message(acc_package_buf, message)
       end)
 
@@ -252,9 +258,9 @@ defmodule ExRudp.Layer do
   def input(layer, data) do
     layer = put_in(layer.last_recv_tick, layer.current_tick)
 
-    {layer, remain} = do_input(data, layer)
-    check_missing(layer, false)
-    {layer, remain}
+    {layer, _remain} = do_input(data, layer)
+    layer = check_missing(layer, false)
+    layer
   end
 
   defp do_input(<<>>, layer), do: {layer, <<>>}
