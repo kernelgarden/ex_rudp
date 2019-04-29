@@ -16,7 +16,7 @@ defmodule ExRudp.Layer do
             send_id: 0,
             req_send_again: [],
             add_send_again: [],
-            corrpt: 0,
+            corrupt: 0,
             current_tick: 0,
             last_recv_tick: 0,
             last_expired_tick: 0,
