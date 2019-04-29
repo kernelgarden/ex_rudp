@@ -116,16 +116,15 @@ defimpl Enumerable, for: ExRudp.Message.Queue do
   end
 
   def reduce(
-        %{__struct__: __MODULE__, internal_queue: internal_queue} = _queue,
+        %{__struct__: ExRudp.Message.Queue, internal_queue: []} = _queue,
         {:cont, acc},
         _fun
-      )
-      when internal_queue == [] do
+      ) do
     {:done, acc}
   end
 
   def reduce(
-        %{__struct__: __MODULE__, internal_queue: [head | tail], num: num} = queue,
+        %{__struct__: ExRudp.Message.Queue, internal_queue: [head | tail], num: num} = queue,
         {:cont, acc},
         fun
       ) do
@@ -134,7 +133,7 @@ defimpl Enumerable, for: ExRudp.Message.Queue do
     reduce(queue, fun.(head, acc), fun)
   end
 
-  def slice(%{__struct__: __MODULE__, internal_queue: internal_queue, num: num} = _queue) do
+  def slice(%{__struct__: ExRudp.Message.Queue, internal_queue: internal_queue, num: num} = _queue) do
     {:ok, num, &slicing_fun(internal_queue, &1, &2)}
   end
 

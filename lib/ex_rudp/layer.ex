@@ -112,11 +112,11 @@ defmodule ExRudp.Layer do
   end
 
   defp check_expiration(layer) do
-    if layer.current_tick >= layer.last_exipired_tick + ExRudp.expired_tick() do
+    if layer.current_tick >= layer.last_expired_tick + ExRudp.expired_tick() do
       put_in(layer.last_expired_tick, layer.current_tick)
       |> clear_send_expiration()
     else
-      # do not anything
+      Logger.debug(fn -> "check expiration=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_expired_tick + ExRudp.expired_tick()}" end)
       layer
     end
   end
@@ -125,6 +125,7 @@ defmodule ExRudp.Layer do
     if layer.current_tick >= layer.last_recv_tick + ExRudp.corrupt_tick() do
       put_in(layer.corrupt, ExRudp.error_corrupt())
     else
+      Logger.debug(fn -> "check corruption=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_recv_tick + ExRudp.corrupt_tick()}" end)
       layer
     end
   end
@@ -133,6 +134,7 @@ defmodule ExRudp.Layer do
     if layer.current_tick >= layer.last_send_delay_tick + ExRudp.send_delay_tick() do
       {:ok, put_in(layer.last_send_delay_tick, layer.current_tick)}
     else
+      Logger.debug(fn -> "check delay=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_send_delay_tick + ExRudp.send_delay_tick()}" end)
       {:error, layer}
     end
   end
