@@ -20,7 +20,7 @@ defmodule ExRudp.Message.Queue do
           | {:error, :empty}
           | {:error, :not_matched}
   def pop(queue, id) do
-    case Enum.at(queue.internal_queue, -1) do
+    case Enum.at(queue.internal_queue, 0) do
       nil ->
         nil
 
@@ -41,13 +41,10 @@ defmodule ExRudp.Message.Queue do
       false ->
         queue = put_in(queue.num, queue.num - 1)
 
-        queue =
-          put_in(
-            queue.internal_queue,
-            List.delete_at(queue.internal_queue, -1)
-          )
+        [head | tail] = queue.internal_queue
+        queue = put_in(queue.internal_queue, tail)
 
-        {:ok, {queue, message}}
+        {:ok, {queue, head}}
     end
   end
 
@@ -57,15 +54,15 @@ defmodule ExRudp.Message.Queue do
   end
 
   def push_list(queue, messages) when is_list(messages) do
-    messages
-    |> Enum.reduce(queue, fn message, acc_queue ->
-      push(acc_queue, message)
-    end)
+    size = length(messages)
+    queue = put_in(queue.num, queue.num + size)
+    queue = put_in(queue.internal_queue, queue.internal_queue ++ messages)
+    queue
   end
 
   @spec push(__MODULE__.t(), Message.t()) :: __MODULE__.t()
   def push(queue, message) do
-    queue = put_in(queue.internal_queue, [message | queue.internal_queue])
+    queue = put_in(queue.internal_queue, queue.internal_queue ++ [message])
     queue = put_in(queue.num, queue.num + 1)
     queue
   end
@@ -97,9 +94,9 @@ defmodule ExRudp.Message.Queue do
 end
 
 defimpl Enumerable, for: ExRudp.Message.Queue do
-  def count(%{__struct: __MODULE__, num: num} = _queue), do: {:ok, num}
+  def count(%{__struct: ExRudp.Message.Queue, num: num} = _queue), do: {:ok, num}
 
-  def member?(%{__struct__: __MODULE__, internal_queue: internal_queue} = _queue, elem) do
+  def member?(%{__struct__: ExRudp.Message.Queue, internal_queue: internal_queue} = _queue, elem) do
     case Enum.member?(internal_queue, elem) do
       true ->
         {:ok, true}

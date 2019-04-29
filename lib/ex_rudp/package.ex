@@ -1,5 +1,5 @@
 defmodule ExRudp.Package do
-  defstruct next_ref: nil, buf: <<>>
+  defstruct buf: <<>>
 
   @spec new(binary()) :: ExRudp.Package.t()
   def new(buf \\ <<>>) do

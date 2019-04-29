@@ -11,19 +11,18 @@ defmodule ExRudp.Package.Buf do
     %__MODULE__{}
   end
 
-  @spec generate_new_package(__MODULE__.t()) :: __MODULE__.t()
+  @spec generate_new_package(__MODULE__.t()) :: ExRudp.Package.t()
   def generate_new_package(package_buf) do
-    do_generate_new_package(package_buf, length(package_buf.list))
+    do_generate_new_package(package_buf, byte_size(package_buf.tmp))
   end
 
   defp do_generate_new_package(package_buf, length) when length <= 0, do: package_buf
 
   defp do_generate_new_package(package_buf, _length) do
     new_package = Package.new(package_buf.tmp)
-    new_list = [new_package | package_buf.list]
 
     package_buf = put_in(package_buf.tmp, <<>>)
-    package_buf = put_in(package_buf.list, new_list)
+    package_buf = put_in(package_buf.list, package_buf.list ++ [new_package])
     package_buf = put_in(package_buf.seq, package_buf.seq + 1)
 
     package_buf
@@ -159,5 +158,44 @@ defmodule ExRudp.Package.Buf do
       )
 
     package_buf
+  end
+
+  defimpl Enumerable, for: ExRudp.Package.Buf do
+    def count(%{__struct: ExRudp.Package.Buf, list: list} = _buf), do: {:ok, length(list)}
+
+    def member?(%{__struct__: ExRudp.Package.Buf} = _buf, _elem) do
+      {:error, ExRudp.Package.Buf}
+    end
+
+    def reduce(_buf, {:halt, acc}, _fun), do: {:halted, acc}
+
+    def reduce(buf, {:suspend, acc}, fun) do
+      {:suspended, acc, &reduce(buf, &1, fun)}
+    end
+
+    def reduce(
+          %{__struct__: ExRudp.Package.Buf, list: []} = _buf,
+          {:cont, acc},
+          _fun
+        ) do
+      {:done, acc}
+    end
+
+    def reduce(
+          %{__struct__: ExRudp.Package.Buf, list: [head | tail]} = buf,
+          {:cont, acc},
+          fun
+        ) do
+      buf = put_in(buf.list, tail)
+      reduce(buf, fun.(head, acc), fun)
+    end
+
+    def slice(%{__struct__: ExRudp.Package.Buf, list: list} = _buf) do
+      {:ok, length(list), &slicing_fun(list, &1, &2)}
+    end
+
+    defp slicing_fun(buf, start, length) do
+      Enum.slice(buf, start, length)
+    end
   end
 end

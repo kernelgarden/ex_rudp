@@ -213,6 +213,8 @@ defmodule ExRudp.Layer do
     package_buf =
       layer.send_queue
       |> Enum.reduce(package_buf, fn message, acc_package_buf ->
+        message
+        |> IO.inspect(label: "Fuck => ")
         PB.pack_message(acc_package_buf, message)
       end)
 
@@ -383,7 +385,7 @@ defmodule ExRudp.Layer do
             put_in(
               layer.recv_queue,
               MQ.insert_first(layer.recv_queue, new_message, fn m1, m2 ->
-                m1.id > m2.id
+                m1.id < m2.id
               end)
             )
 
