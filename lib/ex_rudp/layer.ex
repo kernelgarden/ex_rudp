@@ -358,8 +358,36 @@ defmodule ExRudp.Layer do
     end
   end
 
+  defp insert_message(%{__struct__: __MODULE__, recv_id_min: recv_id_min} = layer, id, _bin)
+       when id < recv_id_min do
+    layer
+  end
+
   defp insert_message(layer, id, bin) do
-    # todo
+    layer = put_in(layer.recv_skip, Map.delete(layer.recv_skip, id))
+
+    layer =
+      case id > layer.recv_id_max or MQ.is_empty?(layer.recv_queue) do
+        true ->
+          new_message = Message.new(bin, id)
+          layer = put_in(layer.recv_queue, MQ.push(layer.recv_queue, new_message))
+          layer = put_in(layer.recv_id_max, id)
+          layer
+
+        false ->
+          new_message = Message.new(bin, id)
+
+          layer =
+            put_in(
+              layer.recv_queue,
+              MQ.insert_first(layer.recv_queue, new_message, fn m1, m2 ->
+                m1.id > m2.id
+              end)
+            )
+
+          layer
+      end
+
     layer
   end
 

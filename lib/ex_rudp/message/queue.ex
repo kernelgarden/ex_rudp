@@ -69,6 +69,31 @@ defmodule ExRudp.Message.Queue do
     queue = put_in(queue.num, queue.num + 1)
     queue
   end
+
+  @spec is_empty?(__MODULE__.t()) :: boolean()
+  def is_empty?(%{__struct__: __MODULE__, num: num} = _queue) when num > 0, do: false
+
+  def is_empty?(%{__struct__: __MODULE__, num: _num} = _queue), do: true
+
+  @spec insert_first(__MODULE__.t(), Message.t(), (Message.t(), Messate.t() -> boolean())) ::
+          __MODULE__.t()
+  def insert_first(
+        %{__struct__: __MODULE__, internal_queue: internal_queue, num: num} = queue,
+        message,
+        first_match_fun
+      ) do
+    {left, right} =
+      internal_queue
+      |> Enum.split_while(fn m ->
+        !first_match_fun.(m, message)
+      end)
+
+    right = [message | right]
+    queue = put_in(queue.num, num + 1)
+    queue = put_in(queue.internal_queue, left ++ right)
+
+    queue
+  end
 end
 
 defimpl Enumerable, for: ExRudp.Message.Queue do
