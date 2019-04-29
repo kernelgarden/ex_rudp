@@ -234,8 +234,8 @@ defmodule ExRudp.Layer do
     id = BinaryUtil.bin_or(id, filter)
 
     cond do
-      id < (max - 0x8000) -> id + 0x10000
-      id > (max + 0x8000) -> id - 0x10000
+      id < max - 0x8000 -> id + 0x10000
+      id > max + 0x8000 -> id - 0x10000
       true -> id
     end
   end
