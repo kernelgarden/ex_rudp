@@ -28,3 +28,10 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env()}.exs"
+
+config :ex_rudp,
+  corrupt_tick: 5,
+  # 5min * (tick per sec)
+  expired_tick: 100 * 60 * 5,
+  send_delay_tick: 1,
+  missing_time: 10_000_000
