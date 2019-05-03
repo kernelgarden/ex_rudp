@@ -116,7 +116,7 @@ defmodule ExRudp.Layer do
       put_in(layer.last_expired_tick, layer.current_tick)
       |> clear_send_expiration()
     else
-      Logger.debug(fn -> "check expiration=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_expired_tick + ExRudp.expired_tick()}" end)
+      # Logger.debug(fn -> "check expiration=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_expired_tick + ExRudp.expired_tick()}" end)
       layer
     end
   end
@@ -125,7 +125,7 @@ defmodule ExRudp.Layer do
     if layer.current_tick >= layer.last_recv_tick + ExRudp.corrupt_tick() do
       put_in(layer.corrupt, ExRudp.error_corrupt())
     else
-      Logger.debug(fn -> "check corruption=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_recv_tick + ExRudp.corrupt_tick()}" end)
+      # Logger.debug(fn -> "check corruption=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_recv_tick + ExRudp.corrupt_tick()}" end)
       layer
     end
   end
@@ -134,7 +134,7 @@ defmodule ExRudp.Layer do
     if layer.current_tick >= layer.last_send_delay_tick + ExRudp.send_delay_tick() do
       {:ok, put_in(layer.last_send_delay_tick, layer.current_tick)}
     else
-      Logger.debug(fn -> "check delay=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_send_delay_tick + ExRudp.send_delay_tick()}" end)
+      # Logger.debug(fn -> "check delay=> left: #{inspect layer.current_tick}, right: #{inspect layer.last_send_delay_tick + ExRudp.send_delay_tick()}" end)
       {:error, layer}
     end
   end
@@ -174,41 +174,48 @@ defmodule ExRudp.Layer do
     layer = put_in(layer.add_send_again, tail)
 
     {min, max} = head
-    package_buf = do_reply_request(layer.send_history, package_buf, min, max)
-
-    {layer, package_buf}
-  end
-
-  defp do_reply_request(send_history, package_buf, min, max) do
-    head = Enum.at(send_history, 0)
-    if max < head.id do
-      PB.pack_request(package_buf, min, max, ExRudp.type_missing())
-    else
-      case MQ.is_empty?(send_history) do
-        true -> process_empty_send_history(package_buf, min, max, 0)
-        false -> process_send_history(package_buf, send_history, min, max, 0)
-      end
-    end
-  end
-
-  defp process_empty_send_history(package_buf, min, _max, start) do
-    case min < start do
-      true -> handle_missing(package_buf, min, start - 1)
-      false -> package_buf
-    end
+    # package_buf = do_reply_request(layer.send_history, package_buf, min, max)
+    package_buf = process_send_history(package_buf, layer.send_history, min, max, 0)
+    reply_request({layer, package_buf})
   end
 
   defp process_send_history(package_buf, send_history, min, max, start) do
-    head = Enum.at(send_history, 0)
+    history = Enum.at(send_history, 0)
 
-    if head != nil and min <= head.id do
-      package_buf = PB.pack_message(package_buf, head)
-      start = if start == 0, do: head.id, else: start
-      {:ok, {tail, _}} = MQ.pop(send_history, head.id)
-      process_send_history(package_buf, tail, min, max, start)
-    else
-      # jump direct
-      process_empty_send_history(package_buf, min, max, start)
+    case history == nil or max < history.id do
+      true ->
+        handle_missing(package_buf, min, max)
+
+      false ->
+        {package_buf, start} = find_history(package_buf, send_history, min, max, start)
+
+        package_buf =
+          if min < start do
+            handle_missing(package_buf, min, start - 1)
+          else
+            package_buf
+          end
+
+        package_buf
+    end
+  end
+
+  defp find_history(package_buf, send_history, min, max, start) do
+    history = Enum.at(send_history, 0)
+
+    cond do
+      history == nil or max < history.id ->
+        {package_buf, start}
+
+      min <= history.id ->
+        package_buf = PB.pack_message(package_buf, history)
+        start = if start == 0, do: history.id, else: start
+        {:ok, {tail, _}} = MQ.pop(send_history, history.id)
+        find_history(package_buf, tail, min, max, start)
+
+      true ->
+        {:ok, {tail, _}} = MQ.pop(send_history, history.id)
+        find_history(package_buf, tail, min, max, start)
     end
   end
 
@@ -220,7 +227,6 @@ defmodule ExRudp.Layer do
     package_buf =
       layer.send_queue
       |> Enum.reduce(package_buf, fn message, acc_package_buf ->
-        message
         PB.pack_message(acc_package_buf, message)
       end)
 

@@ -130,7 +130,9 @@ defimpl Enumerable, for: ExRudp.Message.Queue do
     reduce(queue, fun.(head, acc), fun)
   end
 
-  def slice(%{__struct__: ExRudp.Message.Queue, internal_queue: internal_queue, num: num} = _queue) do
+  def slice(
+        %{__struct__: ExRudp.Message.Queue, internal_queue: internal_queue, num: num} = _queue
+      ) do
     {:ok, num, &slicing_fun(internal_queue, &1, &2)}
   end
 
